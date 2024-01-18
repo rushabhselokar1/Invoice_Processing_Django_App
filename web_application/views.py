@@ -113,7 +113,7 @@ def classification_prediction(request):
         print('File Id: ',file_id)
   
         # loading the model from model directory
-        model = tf.keras.models.load_model("models/keras_Model.h5", compile=False)
+        model = tf.keras.models.load_model("models/keras_model.h5", compile=False)
         
         # Load the image classification labels
         with open("models/labels.txt", "r") as labels_file:
