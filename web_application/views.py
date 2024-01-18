@@ -17,33 +17,43 @@ import os
 import numpy as np
 from web_application.utils.list_of_fields_question import fields_questions_list_for_invoice,fields_questions_list_for_bills
 from web_application.utils.text_getter import generate_result
+#import logging
+
+#logger = logging.getLogger(__name__)
 
 # this view is for home page
 def home(request):
+    #logger.info("Inside 'home' function in views.py")
     return render(request, 'home.html')
 
 def about(request):
+    #logger.info("Inside 'about' function in views.py")
     return render(request, 'about.html')
 
 def contact(request):
+    #logger.info("Inside 'contact' function in views.py")
     return render(request, 'contact.html')
 
 def login_user(request):
+    #logger.info("Inside 'login_user' function in views.py")
     if request.method == 'POST':
         username = request.POST.get('username')
         password = request.POST.get('password')
         user = authenticate(request,username=username,password=password)
         if user is not None:
+            #logger.info(f"Successfully login for user: {username}")            
             login(request,user)
             messages.success(request,(f"Welcome {username}. You have been Logged in Successfully.!"))
             return redirect('home')
         else:
+            #logger.error(f"Failed login attempt for user: {username}")
             messages.error(request,("There was an error logining in. Please try again.!"))
-            return redirect('login')        
-    else: 
+            return redirect('login')  
+    else:
         return render(request, 'login.html',{})
 
 def register_user(request):
+    #logger.info("Inside 'register_user' function in views.py")
     form = SignUpForm()
     if request.method == 'POST':
         form = SignUpForm(request.POST)
@@ -51,39 +61,51 @@ def register_user(request):
             form.save()
             username = form.cleaned_data['username']
             password = form.cleaned_data['password1']
+            
+            # Log user registration
+            #logger.info(f"New user registered: {username}")
+            
             # log in user
             user = authenticate(username=username,password=password)
             login(request,user)
             messages.success(request,("You have been Registered Successfully.! Login to your account..."))
             return redirect('login')
         else:
+            #logger.error("Error in user registration.")
             messages.success(request,("There was an error in registering. Please try again.!"))
             return redirect('register')
     else:
         return render(request, 'register.html',{'form':form})
 
 def logout_user(request):
+    #logger.info("Inside 'logout_user' function in views.py")
     logout(request)
+    #logger.info("{User logged out.}")
     messages.success(request,("You have been logged out."))
     return redirect('home')
  
 def upload_invoice(request):
+    #logger.info("Inside 'upload_invoice' function in views.py")
     if request.method == 'POST':
         form = UploadFileForm(request.POST, request.FILES)
         if form.is_valid():
             form.save()
+            #logger.info("File uploaded successfully.")
             messages.success(request,("Image uploaded successfully."))
             return redirect('show_files')
     else:
-           # messages.success(request,("Upload failed. Try again."))
+            #logger.error("Error in uploading the file.")
+           #  messages.success(request,("Upload failed. Try again."))
             form = UploadFileForm()
     return render(request,'upload_invoice.html', {'form': form})      
 
 def show_files(request):
+    #logger.info("Inside 'show_files' function in views.py")
     files = UploadedFile.objects.order_by('-file_id')
     return render(request, 'show_files.html', {'files': files})
     
 def classification_prediction(request):
+    #logger.info("Inside 'classification_prediction' function in views.py")
     if request.method=='POST':
         # img_file contains path to the image file in media which is in string
         img_file = request.POST['imgFile']
@@ -120,45 +142,42 @@ def classification_prediction(request):
         '''
         data_classify = np.ndarray(shape=(1, 224, 224, 3), dtype=np.float32)
         data_classify[0] = normalized_image_array_classify
-        
         # Make a prediction for image classification
         prediction_classify = model.predict(data_classify)
         index_classify = np.argmax(prediction_classify)
         class_name_classify = class_names[index_classify]
         confidence_score_classify = prediction_classify[0][index_classify]
         confidence_score_classify = confidence_score_classify*100
-
-        
         # Display the classification prediction and confidence score
-        value=f"{class_name_classify[2:]}"
-        
+        value = f"{class_name_classify[2:]}"
         #global class_name
         class_name = f"{class_name_classify[2:]}"
         confidence_score =f"{confidence_score_classify:.2f} %"
+        #logger.info("Image classification Completed Successfully.")
         messages.success(request,("Image Classification Completed Successfully."))
-
     return render(request, 'classification_prediction.html',{'img_file':img_file,'file_id':file_id,'class_name':class_name,'confidence_score':confidence_score})
 
-def text_extraction_page(request):    
+def text_extraction_page(request):
+    #logger.info("Inside 'text_extraction_page' function in views.py")  
     if request.method=='POST':
         # class_name is the invoice classfied type
         class_name = request.POST['class_name']
-        print("Class Name : ",class_name)
+        #print("Class Name : ",class_name)
         # img_file contains path to the image file in media which is in string
         img_file = request.POST['img_file']
-        print("Image Path: ",img_file)
+        #print("Image Path: ",img_file)
         image = Image.open('.'+ img_file).convert("RGB")
-    
     return render(request,'text_extraction_page.html',{'class_name':class_name,
         'img_file':img_file,
         'fields_questions_list_for_invoice':fields_questions_list_for_invoice,
         'fields_questions_list_for_bills':fields_questions_list_for_bills})
 
 def text_show_files(request):
+    #logger.info("Inside 'text_show_files' view.")
     if request.method =="POST":
         img_file = request.POST['img_file']
         class_name = request.POST['class_name']
-        image = Image.open('.'+ img_file).convert("RGB")    
+        image = Image.open('.'+ img_file).convert("RGB")   
             
         # getting the selected fields from checkbox.
         selected_fields = request.POST.getlist('selected_fields')
@@ -180,13 +199,9 @@ def text_show_files(request):
             print("Selected Questions:",selected_questions)
         else:
             return HttpResponse("Under Process")
-            
         selected_dict = dict(zip(selected_fields, selected_questions))
-        
         print('Selected Dictionary: ',selected_dict)
-        
         extracted_data = {}
-        
         if class_name == "Invoice":
             for field,question in selected_dict.items():
                 user_question = question
@@ -202,9 +217,11 @@ def text_show_files(request):
         else:
             pass           
         messages.success(request,("Data Extraction Successfull...!"))
+        #logger.info("Data Extraction Successfull.")
     return render(request, 'text_show_files.html',{'img_file':img_file,'extracted_data':extracted_data}) 
 
 def verify_predictions(request):
+    #logger.info("Inside 'verify_prediction' view.")
     if request.method == 'POST':
         file_id = request.POST.get('file_id')
         class_name = request.POST.get('class_name')
@@ -212,5 +229,11 @@ def verify_predictions(request):
         img_file = request.POST.get('img_file')
         file = UploadedFile.objects.get(pk=file_id)
         print("Class Name: ",class_name)
+        #logger.info(f"Class Name Predicted from Model: {class_name}")
         print("Confidence Score: ",confidence_score)
+        #logger.info(f"Confidence Score Generated from Model: {confidence_score}")
     return render(request,'verify_predictions.html', {'file': file,'class_name': class_name,'confidence_score': confidence_score,'img_file':img_file})
+
+
+
+

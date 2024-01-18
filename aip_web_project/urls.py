@@ -20,6 +20,7 @@ urlpatterns = [
     path('verify_predictions/', views.verify_predictions, name='verify_predictions'),
     path('text_extraction_page/', views.text_extraction_page, name='text_extraction_page'),
     path('text_show_files/',views.text_show_files,name='text_show_files'),
+
 ]
 
 urlpatterns += static(settings.MEDIA_URL,document_root=settings.MEDIA_ROOT)
